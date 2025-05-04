@@ -21,10 +21,11 @@ const UserSchema = new Schema(
       unique: true,
       immutable: true,
     },
-    age: {
+    role: {
       type: String,
-      emun: ["User", "admin"],
-      default: "User",
+      // required: true,
+      emun: ["user", "admin"],
+      default: "user",
     },
     problemSolved: {
       type: [String],

@@ -1,3 +1,5 @@
+// const userMiddleware = require("../Middleware/UserMiddleware");
+const redisClient = require("../models/Redis");
 const model = require("../models/user");
 const validate = require("../utils/Validator");
 const bcrypt = require("bcrypt");
@@ -10,20 +12,22 @@ const register = async (req, res) => {
   try {
     validate(req.body); // Assuming this function exists and works properly
 
-    const { firstName, emailId, password } = req.body;
+    const { firstName, emailId, password, role } = req.body;
 
-    const hashedPass = await bcrypt.hash(password, 10);
+    req.body.password = await bcrypt.hash(password, 10);
+    req.body.role = "user";
 
-    const userData = {
-      firstName,
-      emailId,
-      password: hashedPass,
-    };
+    // const userData = {
+    //   firstName,
+    //   emailId,
+    //   password: hashedPass,
+    //   role,
+    // };
 
-    const insert = await model.create(userData);
+    const insert = await model.create(req.body);
 
     const token = jwt.sign(
-      { _id: insert._id, emailId },
+      { _id: insert._id, emailId, role: insert.role },
       process.env.RANDOM_JWT,
       { expiresIn: 3600 }
     );
@@ -48,8 +52,7 @@ const login = async (req, res) => {
     if (!password) {
       throw new Error("Invalid cradential");
     }
-
-    const User = await model.find({ emailId: emailId });
+    const User = await model.findOne({ emailId });
 
     const isAllowed = bcrypt.compare(password, User.password);
 
@@ -58,7 +61,7 @@ const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { _id: User._id, emailId: emailId },
+      { _id: User._id, emailId: emailId, role: User.role },
       process.env.RANDOM_JWT,
       {
         expiresIn: 3600,
@@ -77,39 +80,73 @@ const login = async (req, res) => {
 const logout = async (req, res) => {
   try {
     const { token } = req.cookies;
-    console.log(token);
-
     const payload = jwt.decode(token);
-    console.log(payload);
 
-    res.cookie("token", null, { expires: new Date(Date.now()) });
-    res.send("Logout succesfull.");
+    await redisClient.set(`token:${token}`, "Blocked");
+    await redisClient.expireAt(`token:${token}`, payload.exp);
+
+    res.cookie("token", null, new Date(Date.now()));
+
+    res.send("logout Succesfully");
   } catch (err) {
     return res.status(400).send(`Error occurred: ${err.message}`);
+  }
+};
+
+//adminResister
+
+const adminResister = async (req, res) => {
+  try {
+    validate(req.body); // Assuming this function exists and works properly
+
+    const { firstName, emailId, password } = req.body;
+
+    const hashedPass = await bcrypt.hash(password, 10);
+    req.body.role = "admin";
+
+    const userData = {
+      firstName,
+      emailId,
+      password: hashedPass,
+      role: "admin",
+    };
+
+    const insert = await model.create(userData);
+
+    const token = jwt.sign(
+      { _id: insert._id, emailId, role: insert.role },
+      process.env.RANDOM_JWT,
+      { expiresIn: 3600 }
+    );
+    res.cookie("token", token, { maxAge: 60 * 60 * 1000 });
+
+    res.status(201).send("User registered successfully");
+  } catch (err) {
+    res.status(400).send(`Error occurred: ${err.message}`);
   }
 };
 
 //getProfile
 
-const getProfile = async (req, res) => {
-  try {
-    const token = req.cookies.token;
+// const getProfile = async (req, res) => {
+//   try {
+//     const token = req.cookies.token;
 
-    if (!token) {
-      return res.status(401).send("Unauthorized: No token provided");
-    }
+//     if (!token) {
+//       return res.status(401).send("Unauthorized: No token provided");
+//     }
 
-    const payload = jwt.verify(token, process.env.RANDOM_JWT);
+//     const payload = jwt.verify(token, process.env.RANDOM_JWT);
 
-    const data = await model.findOne(payload._id);
-    if (!data) {
-      return res.status(404).send("User not found");
-    }
-    res.status(200).json(data);
-    console.log(data);
-  } catch (err) {
-    return res.status(400).send(`Error occurred: ${err.message}`);
-  }
-};
+//     const data = await model.findOne(payload._id);
+//     if (!data) {
+//       return res.status(404).send("User not found");
+//     }
+//     res.status(200).json(data);
+//     console.log(data);
+//   } catch (err) {
+//     return res.status(400).send(`Error occurred: ${err.message}`);
+//   }
+// };
 
-module.exports = { register, login, logout, getProfile };
+module.exports = { register, login, logout, adminResister };

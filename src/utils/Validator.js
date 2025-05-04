@@ -14,9 +14,9 @@ const validate = (data) => {
     throw new Error("Invalid email");
   }
 
-  if (!validator.isStrongPassword(data.password)) {
-    throw new Error("weak password");
-  }
+  // if (!validator.isStrongPassword(data.password)) {
+  //   throw new Error("weak password");
+  // }
 };
 
 module.exports = validate;
