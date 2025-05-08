@@ -1,5 +1,4 @@
-const getlanguageById = require("../utils/languageId");
-const submitBatch = require("../services/submitBatch"); // Assuming you have this
+const { getlanguageById, submitBatch } = require("../utils/languageId");
 
 const createProblem = async (req, res) => {
   try {
@@ -18,7 +17,7 @@ const createProblem = async (req, res) => {
     for (const { language, completeCode } of referanceSolution) {
       const langId = getlanguageById(language);
 
-      const submission = visibleTestCase.map(([input, output]) => ({
+      const submission = visibleTestCase.map((input, output) => ({
         source_code: completeCode,
         language_id: langId,
         stdin: input,
