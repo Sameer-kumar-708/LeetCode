@@ -10,19 +10,12 @@ require("dotenv").config();
 
 const register = async (req, res) => {
   try {
-    validate(req.body); // Assuming this function exists and works properly
+    validate(req.body);
 
-    const { firstName, emailId, password, role } = req.body;
+    const { firstName, emailId, password } = req.body;
 
     req.body.password = await bcrypt.hash(password, 10);
     req.body.role = "user";
-
-    // const userData = {
-    //   firstName,
-    //   emailId,
-    //   password: hashedPass,
-    //   role,
-    // };
 
     const insert = await model.create(req.body);
 
@@ -97,7 +90,7 @@ const logout = async (req, res) => {
 
 const adminResister = async (req, res) => {
   try {
-    validate(req.body); // Assuming this function exists and works properly
+    validate(req.body);
 
     const { firstName, emailId, password } = req.body;
 
@@ -125,28 +118,5 @@ const adminResister = async (req, res) => {
     res.status(400).send(`Error occurred: ${err.message}`);
   }
 };
-
-//getProfile
-
-// const getProfile = async (req, res) => {
-//   try {
-//     const token = req.cookies.token;
-
-//     if (!token) {
-//       return res.status(401).send("Unauthorized: No token provided");
-//     }
-
-//     const payload = jwt.verify(token, process.env.RANDOM_JWT);
-
-//     const data = await model.findOne(payload._id);
-//     if (!data) {
-//       return res.status(404).send("User not found");
-//     }
-//     res.status(200).json(data);
-//     console.log(data);
-//   } catch (err) {
-//     return res.status(400).send(`Error occurred: ${err.message}`);
-//   }
-// };
 
 module.exports = { register, login, logout, adminResister };
