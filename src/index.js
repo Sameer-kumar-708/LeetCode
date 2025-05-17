@@ -5,11 +5,14 @@ const mongoose = require("mongoose");
 const authRouter = require("./routes/UserAuth");
 const cookieParser = require("cookie-parser");
 const redisClient = require("./models/Redis");
+const problemRouter = require("./routes/problemCreater");
 
 app.use(cookieParser());
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 app.use("/auth", authRouter);
+app.use("/problem", problemRouter);
 
 const dbConnect = async () => {
   try {

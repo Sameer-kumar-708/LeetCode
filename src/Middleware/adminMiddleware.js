@@ -5,34 +5,43 @@ const redisClient = require("../models/Redis");
 
 const adminMiddleware = async (req, res, next) => {
   try {
-    const { token } = req.cookies;
+    const token = req.cookies.token; // Optional chaining in case cookies are undefined
     if (!token) {
       return res.status(401).send("No token found.");
     }
 
-    const payload = jwt.verify(token, process.env.RANDOM_JWT);
-    const { _id } = payload;
-
-    if (!_id) {
-      throw new Error("Invalid Token");
+    let payload;
+    try {
+      payload = jwt.verify(token, process.env.RANDOM_JWT); // Assign to outer payload
+    } catch (err) {
+      return res.status(401).send("Invalid or expired token");
     }
 
-    if (payload.role !== "admin") throw new Error("Not Valid user");
+    const { _id, role } = payload; // Now payload is accessible
+
+    if (!_id) {
+      return res.status(401).send("Invalid Token");
+    }
+
+    if (role !== "admin") {
+      // Use role instead of payload.role (already destructured)
+      return res.status(403).send("Access denied. Admin privileges required.");
+    }
 
     const user = await model.findById(_id);
     if (!user) {
-      throw new Error("User does not exist");
+      return res.status(404).send("User does not exist");
     }
 
     const isBlocked = await redisClient.exists(`token:${token}`);
     if (isBlocked === 1) {
-      throw new Error("Invalid token");
+      return res.status(401).send("Invalid token");
     }
 
     req.user = user;
     next();
   } catch (err) {
-    return res.status(401).send(`Unauthorized: ${err.message}`);
+    return res.status(500).send(`Internal server error: ${err.message}`);
   }
 };
 

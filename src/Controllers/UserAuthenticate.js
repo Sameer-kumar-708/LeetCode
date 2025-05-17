@@ -81,6 +81,7 @@ const logout = async (req, res) => {
     res.cookie("token", null, new Date(Date.now()));
 
     res.send("logout Succesfully");
+    ``;
   } catch (err) {
     return res.status(400).send(`Error occurred: ${err.message}`);
   }
