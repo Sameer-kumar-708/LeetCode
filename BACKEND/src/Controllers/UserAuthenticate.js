@@ -1,6 +1,8 @@
 // const userMiddleware = require("../Middleware/UserMiddleware");
 const redisClient = require("../models/Redis");
+const submission = require("../models/submission");
 const model = require("../models/user");
+const user = require("../models/user");
 const validate = require("../utils/Validator");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -14,6 +16,7 @@ const register = async (req, res) => {
 
     const { firstName, emailId, password } = req.body;
 
+    // console.log(req.body);
     req.body.password = await bcrypt.hash(password, 10);
     req.body.role = "user";
 
@@ -24,9 +27,17 @@ const register = async (req, res) => {
       process.env.RANDOM_JWT,
       { expiresIn: 3600 }
     );
+    const reply = {
+      firstName: user.firstName,
+      emailId: user.emailId,
+      _id: user._id,
+    };
     res.cookie("token", token, { maxAge: 60 * 60 * 1000 });
 
-    res.status(201).send("User registered successfully");
+    res.status(201).json({
+      user: reply,
+      message: "Resgister succesfull..",
+    });
   } catch (err) {
     res.status(400).send(`Error occurred: ${err.message}`);
   }
@@ -45,13 +56,24 @@ const login = async (req, res) => {
     if (!password) {
       throw new Error("Invalid cradential");
     }
+    // const User = await user.findOne({ emailId });
     const User = await model.findOne({ emailId });
 
+    // console.log(User);
+
     const isAllowed = bcrypt.compare(password, User.password);
+
+    console.log(isAllowed);
 
     if (!isAllowed) {
       throw new Error("User not found");
     }
+
+    const reply = {
+      firstName: User.firstName,
+      emailId: User.emailId,
+      _id: User._id,
+    };
 
     const token = jwt.sign(
       { _id: User._id, emailId: emailId, role: User.role },
@@ -62,9 +84,12 @@ const login = async (req, res) => {
     );
     res.cookie("token", token, { maxAge: 60 * 60 * 1000 });
 
-    res.status(201).send("Login Succesfully");
+    res.status(201).json({
+      user: reply,
+      message: "Login succesfull..",
+    });
   } catch (err) {
-    res.status(400).send("Error occured", err.message);
+    res.status(400).send(`Error occurred: ${err.message}`);
   }
 };
 
@@ -120,4 +145,17 @@ const adminResister = async (req, res) => {
   }
 };
 
-module.exports = { register, login, logout, adminResister };
+const deleteProfile = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    await user.findByIdAndDelete({ userId });
+
+    await submission.deleteMany({ userId });
+
+    res.status(200).send("Profile deleted succesfully");
+  } catch (err) {
+    res.status(400).send(`Error occurred: ${err.message}`);
+  }
+};
+
+module.exports = { register, login, logout, adminResister, deleteProfile };

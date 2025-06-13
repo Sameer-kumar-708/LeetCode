@@ -8,6 +8,8 @@ const {
   deleteProblem,
   getProblemById,
   getAllProblem,
+  solvedProblem,
+  submitProblem,
 } = require("../Controllers/UserProblem");
 
 //createProblem
@@ -22,6 +24,7 @@ problemRouter.delete("/delete/:id", adminMiddleware, deleteProblem);
 //solvedProblem
 problemRouter.get("/getProblemById/:id", userMiddleware, getProblemById);
 problemRouter.get("/getAllProblem", userMiddleware, getAllProblem);
-// problemRouter.get("/solvedProblem", userMiddleware, solvedProblem);
+problemRouter.get("/solvedProblem", userMiddleware, solvedProblem);
+problemRouter.get("/submitProblem/:pid", userMiddleware, submitProblem);
 
 module.exports = problemRouter;
