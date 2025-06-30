@@ -1,6 +1,5 @@
 const express = require("express");
 const authRouter = express.Router();
-const user = require("../models/user");
 const {
   register,
   login,
@@ -24,19 +23,21 @@ authRouter.post("/admin/resister", adminMiddleware, adminResister);
 
 //deleteProfile
 
-authRouter.delete("/profile", userMiddleware, deleteProfile);
+authRouter.delete("/deleteprofile", userMiddleware, deleteProfile);
 
 //check
 
-authRouter.get("/check", (req, res) => {
+authRouter.get("/check", userMiddleware, (req, res) => {
   const reply = {
     firstName: req.user.firstName,
     emailId: req.user.emailId,
     _id: req.user._id,
+    role: req.user.role,
   };
+
   res.status(200).json({
     user: reply,
-    message: "valid user",
+    message: "Valid User",
   });
 });
 

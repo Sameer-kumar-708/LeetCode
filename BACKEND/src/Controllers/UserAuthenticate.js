@@ -16,27 +16,35 @@ const register = async (req, res) => {
 
     const { firstName, emailId, password } = req.body;
 
-    // console.log(req.body);
+    // Hash password and assign role
     req.body.password = await bcrypt.hash(password, 10);
     req.body.role = "user";
 
+    // Create user
     const insert = await model.create(req.body);
 
+    // Generate JWT token
     const token = jwt.sign(
-      { _id: insert._id, emailId, role: insert.role },
+      { _id: insert._id, emailId: insert.emailId, role: insert.role },
       process.env.RANDOM_JWT,
       { expiresIn: 3600 }
     );
+
+    // Build response user data
     const reply = {
-      firstName: user.firstName,
-      emailId: user.emailId,
-      _id: user._id,
+      firstName: insert.firstName,
+      emailId: insert.emailId,
+      _id: insert._id,
+      role: insert.role,
     };
+
+    // Set cookie
     res.cookie("token", token, { maxAge: 60 * 60 * 1000 });
 
+    // Send response
     res.status(201).json({
       user: reply,
-      message: "Resgister succesfull..",
+      message: "Register successful.",
     });
   } catch (err) {
     res.status(400).send(`Error occurred: ${err.message}`);
@@ -49,44 +57,46 @@ const login = async (req, res) => {
   try {
     const { emailId, password } = req.body;
 
-    if (!emailId) {
-      throw new Error("Invalid cradential");
+    if (!emailId || !password) {
+      throw new Error("Invalid credentials");
     }
 
-    if (!password) {
-      throw new Error("Invalid cradential");
-    }
-    // const User = await user.findOne({ emailId });
+    // Find user by email
     const User = await model.findOne({ emailId });
-
-    // console.log(User);
-
-    const isAllowed = bcrypt.compare(password, User.password);
-
-    console.log(isAllowed);
-
-    if (!isAllowed) {
+    if (!User) {
       throw new Error("User not found");
     }
 
+    // Check password
+    const isAllowed = await bcrypt.compare(password, User.password);
+    if (!isAllowed) {
+      throw new Error("Invalid password");
+    }
+
+    // Prepare response
     const reply = {
       firstName: User.firstName,
       emailId: User.emailId,
       _id: User._id,
+      role: User.role,
     };
 
+    // Generate token
     const token = jwt.sign(
-      { _id: User._id, emailId: emailId, role: User.role },
+      { _id: User._id, emailId: User.emailId, role: User.role },
       process.env.RANDOM_JWT,
       {
         expiresIn: 3600,
       }
     );
+
+    // Set token as cookie
     res.cookie("token", token, { maxAge: 60 * 60 * 1000 });
 
-    res.status(201).json({
+    // Send response
+    res.status(200).json({
       user: reply,
-      message: "Login succesfull..",
+      message: "Login successful.",
     });
   } catch (err) {
     res.status(400).send(`Error occurred: ${err.message}`);

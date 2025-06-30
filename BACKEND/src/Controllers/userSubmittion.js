@@ -83,7 +83,13 @@ const submitCode = async (req, res) => {
       await req.user.save();
     }
 
-    res.status(201).send(submittedResult);
+    res.status(201).json({
+      accepted,
+      totalTestCases: submittedResult.testCasesTotal,
+      passedTestCases: testCasesPassed,
+      runtime,
+      memory,
+    });
   } catch (err) {
     res.status(500).json({
       message: "Internal server error",
@@ -121,7 +127,12 @@ const runCode = async (req, res) => {
 
     const testResult = await submitToken(resultToken);
 
-    res.status(201).send(testResult);
+    res.status(201).json({
+      success: status,
+      testCases: testResult,
+      runtime,
+      memory,
+    });
   } catch (err) {
     res.status(500).json({
       message: "Internal server error",
