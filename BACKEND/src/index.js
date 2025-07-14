@@ -8,6 +8,7 @@ const redisClient = require("./models/Redis");
 const problemRouter = require("./routes/problemCreater");
 // const submitRouter = require("./Controllers/userSubmittion");
 const submitRouter = require("./routes/Submit");
+const aiRouter = require("./routes/aiChatting");
 const cors = require("cors");
 
 app.use(
@@ -24,6 +25,7 @@ app.use(express.json());
 app.use("/auth", authRouter);
 app.use("/problem", problemRouter);
 app.use("/submittion", submitRouter);
+app.use("/ai", aiRouter);
 
 const dbConnect = async () => {
   try {

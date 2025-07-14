@@ -157,7 +157,7 @@ const getProblemById = async (req, res) => {
     const getProblem = await problem
       .findById(id)
       .select(
-        "_id title description difficulty tags visibleTestCases startCode"
+        "_id title description difficulty tags visibleTestCases startCode referenceSolution"
       );
 
     if (!getProblem) {
@@ -191,7 +191,7 @@ const solvedProblem = async (req, res) => {
 
     const problemSolved = await user.findById(userId).populate({
       path: "problemSolved",
-      select: "_id title description difficulty tags",
+      select: "_id title difficulty tags",
     });
 
     res.status(200).send(problemSolved);

@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import axiosClient from "../utils/axiosClient";
 import { logoutUser } from "../authSlice";
 
-function Home() {
+function Homepage() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [problems, setProblems] = useState([]);
@@ -28,7 +28,7 @@ function Home() {
 
     const fetchSolvedProblems = async () => {
       try {
-        const { data } = await axiosClient.get("/problem/problemSolvedByUser");
+        const { data } = await axiosClient.get("/problem/solvedProblem");
         setSolvedProblems(data);
       } catch (error) {
         console.error("Error fetching solved problems:", error);
@@ -72,6 +72,11 @@ function Home() {
               <li>
                 <button onClick={handleLogout}>Logout</button>
               </li>
+              {user.role == "admin" && (
+                <li>
+                  <NavLink to="/admin">Admin</NavLink>
+                </li>
+              )}
             </ul>
           </div>
         </div>
@@ -131,23 +136,24 @@ function Home() {
                       {problem.title}
                     </NavLink>
                   </h2>
-                  {solvedProblems.some((sp) => sp._id === problem._id) && (
-                    <div className="badge badge-success gap-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      Solved
-                    </div>
-                  )}
+                  {Array.isArray(solvedProblems) &&
+                    solvedProblems.some((sp) => sp._id === problem._id) && (
+                      <div className="badge badge-success gap-2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        Solved
+                      </div>
+                    )}
                 </div>
 
                 <div className="flex gap-2">
@@ -182,4 +188,4 @@ const getDifficultyBadgeColor = (difficulty) => {
   }
 };
 
-export default Home;
+export default Homepage;
