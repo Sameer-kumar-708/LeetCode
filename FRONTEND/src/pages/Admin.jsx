@@ -1,89 +1,87 @@
 import React, { useState } from "react";
-import { Plus, Edit, Trash2, Home, RefreshCw, Zap } from "lucide-react";
+import { PlusCircle, Edit3, Trash2, Video } from "lucide-react";
 import { NavLink } from "react-router";
 
-function Admin() {
-  const [selectedOption, setSelectedOption] = useState(null);
+export default function Admin() {
+  const [active, setActive] = useState("");
 
   const adminOptions = [
     {
       id: "create",
       title: "Create Problem",
-      description: "Add a new coding problem to the platform",
-      icon: Plus,
-      color: "btn-success",
-      bgColor: "bg-success/10",
+      desc: "Add a new coding problem",
+      icon: PlusCircle,
+      color: "success",
       route: "/admin/create",
     },
     {
       id: "update",
       title: "Update Problem",
-      description: "Edit existing problems and their details",
-      icon: Edit,
-      color: "btn-warning",
-      bgColor: "bg-warning/10",
+      desc: "Edit existing problems",
+      icon: Edit3,
+      color: "warning",
       route: "/admin/update",
     },
     {
       id: "delete",
       title: "Delete Problem",
-      description: "Remove problems from the platform",
+      desc: "Remove problems",
       icon: Trash2,
-      color: "btn-error",
-      bgColor: "bg-error/10",
+      color: "error",
       route: "/admin/delete",
+    },
+    {
+      id: "video",
+      title: "Video Resources",
+      desc: "Upload/manage tutorials",
+      icon: Video,
+      color: "info",
+      route: "/admin/video",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-base-200">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-base-content mb-4">
-            Admin Panel
-          </h1>
-          <p className="text-base-content/70 text-lg">
-            Manage coding problems on your platform
+    <div className="min-h-screen bg-gradient-to-b from-base-200 to-base-300 py-12 px-4">
+      <div className="max-w-6xl mx-auto">
+        <header className="text-center mb-12">
+          <h1 className="text-5xl font-bold text-primary">Admin Dashboard</h1>
+          <p className="text-base-content/60 mt-2">
+            Efficiently manage all coding content
           </p>
-        </div>
+        </header>
 
-        {/* Admin Options Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {adminOptions.map((option) => {
-            const IconComponent = option.icon;
+        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 h-[200px] mt-3">
+          {adminOptions.map(({ id, title, desc, icon: Icon, color, route }) => {
+            const isActive = active === id;
             return (
-              <div
-                key={option.id}
-                className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer"
+              <NavLink
+                key={id}
+                to={route}
+                onClick={() => setActive(id)}
+                className={`relative block p-6 bg-base-100 rounded-2xl shadow-md transition-transform transform hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-${color}/50
+                  ${
+                    isActive
+                      ? `border-2 border-${color}`
+                      : `border border-transparent`
+                  }`}
               >
-                <div className="card-body items-center text-center p-8">
-                  {/* Icon */}
-                  <div className={`${option.bgColor} p-4 rounded-full mb-4`}>
-                    <IconComponent size={32} className="text-base-content" />
-                  </div>
-
-                  {/* Title */}
-                  <h2 className="card-title text-xl mb-2">{option.title}</h2>
-
-                  {/* Description */}
-                  <p className="text-base-content/70 mb-6">
-                    {option.description}
-                  </p>
-
-                  {/* Action Button */}
-                  <div className="card-actions">
-                    <div className="card-actions">
-                      <NavLink
-                        to={option.route}
-                        className={`btn ${option.color} btn-wide`}
-                      >
-                        {option.title}
-                      </NavLink>
-                    </div>
-                  </div>
+                <div
+                  className={`absolute -top-5 right-5 p-3 bg-${color}/20 rounded-full`}
+                >
+                  <Icon size={24} className={`text-${color}`} />
                 </div>
-              </div>
+                <div className="mt-4">
+                  <h2 className="text-xl font-semibold text-base-content">
+                    {title}
+                  </h2>
+                  <p className="text-sm text-base-content/70 mt-1">{desc}</p>
+                </div>
+                <span
+                  className={`mt-6 p-2 inline-block btn btn-sm btn-outline btn-${color}`}
+                >
+                  Go
+                </span>
+              </NavLink>
             );
           })}
         </div>
@@ -91,5 +89,3 @@ function Admin() {
     </div>
   );
 }
-
-export default Admin;

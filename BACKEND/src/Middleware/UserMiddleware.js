@@ -19,9 +19,6 @@ const userMiddleware = async (req, res, next) => {
     }
 
     const { _id, role } = payload;
-    if (!_id || role !== "user") {
-      return res.status(403).json({ error: "Unauthorized access" });
-    }
 
     // Check Redis for blocked token
     try {

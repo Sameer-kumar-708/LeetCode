@@ -9,6 +9,8 @@ import AdminPanel from "./components/AdminPanel";
 import ProblemPage from "./pages/ProblemPage";
 import AdminDelete from "./components/AdminDelete";
 import Admin from "./pages/Admin";
+import AdminVideo from "./components/AdminVideo";
+import AdminUplaod from "./components/AdminUplaod";
 
 const App = () => {
   const { isAuthenticated, user, loading } = useSelector((state) => state.auth);
@@ -66,6 +68,26 @@ const App = () => {
         element={
           isAuthenticated & (user?.role === "admin") ? (
             <AdminDelete />
+          ) : (
+            <Navigate to="/" />
+          )
+        }
+      />
+      <Route
+        path="/admin/video"
+        element={
+          isAuthenticated & (user?.role === "admin") ? (
+            <AdminVideo />
+          ) : (
+            <Navigate to="/" />
+          )
+        }
+      />
+      <Route
+        path="/admin/upload/:problemId"
+        element={
+          isAuthenticated & (user?.role === "admin") ? (
+            <AdminUplaod />
           ) : (
             <Navigate to="/" />
           )

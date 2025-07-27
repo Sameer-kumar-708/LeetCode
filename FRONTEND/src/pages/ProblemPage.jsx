@@ -5,12 +5,20 @@ import { useParams } from "react-router";
 import axiosClient from "../utils/axiosClient";
 import SubmissionHistory from "../components/SubmissionHistory";
 import ChatAi from "../components/ChatAi";
+import Editorial from "../components/Editorial";
+import { motion } from "framer-motion";
+import {
+  FileText,
+  BookOpen,
+  Code,
+  CheckCircle,
+  ListVideo,
+  Zap,
+  Play,
+  Terminal,
+} from "lucide-react";
 
-const langMap = {
-  cpp: "C++",
-  java: "Java",
-  javascript: "JavaScript",
-};
+const langMap = { cpp: "C++", java: "Java", javascript: "JavaScript" };
 
 const ProblemPage = () => {
   const [problem, setProblem] = useState(null);
@@ -22,592 +30,322 @@ const ProblemPage = () => {
   const [activeLeftTab, setActiveLeftTab] = useState("description");
   const [activeRightTab, setActiveRightTab] = useState("code");
   const editorRef = useRef(null);
-  let { problemId } = useParams();
-
+  const { problemId } = useParams();
   const { handleSubmit } = useForm();
 
   useEffect(() => {
     const fetchProblem = async () => {
       setLoading(true);
       try {
-        const response = await axiosClient.get(
+        const { data } = await axiosClient.get(
           `/problem/getProblemById/${problemId}`
         );
-
-        const initialCode = response.data.startCode.find(
-          (sc) => sc.language === langMap[selectedLanguage]
-        ).initialCode;
-
-        setProblem(response.data);
-        // console.log(response.data);
-        setCode(initialCode);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching problem:", error);
+        const initial =
+          data.startCode.find((s) => s.language === langMap[selectedLanguage])
+            ?.initialCode || "";
+        setProblem(data);
+        setCode(initial);
+      } catch {
+        // handle error
+      } finally {
         setLoading(false);
       }
     };
-
     fetchProblem();
-  }, [problemId]);
+  }, [problemId, selectedLanguage]);
 
-  // Update code when language changes
-  useEffect(() => {
-    if (problem) {
-      const initialCode = problem.startCode.find(
-        (sc) => sc.language === langMap[selectedLanguage]
-      ).initialCode;
-      setCode(initialCode);
-    }
-  }, [selectedLanguage, problem]);
-
-  const handleEditorChange = (value) => {
-    setCode(value || "");
-  };
-
-  const handleEditorDidMount = (editor) => {
-    editorRef.current = editor;
-  };
-
-  const handleLanguageChange = (language) => {
-    setSelectedLanguage(language);
-  };
-
+  const handleEditorChange = (v) => setCode(v || "");
   const handleRun = async () => {
     setLoading(true);
     setRunResult(null);
-
     try {
-      console.log("Submitting code to backend...", {
-        problemId,
-        code: code.substring(0, 20) + "...",
-        language: selectedLanguage,
-      });
-
-      const response = await axiosClient.post(
+      const { data } = await axiosClient.post(
         `/submittion/run/${problemId}`,
-        {
-          code: code,
-          language: selectedLanguage,
-        },
+        { code, language: selectedLanguage },
         { timeout: 15000 }
       );
-
-      console.log("Run code response:", {
-        success: response.data.success,
-        testCases: response.data.testCases?.length || 0,
-        runtime: response.data.runtime,
-        memory: response.data.memory,
-      });
-
-      setRunResult({
-        success: response.data.success,
-        testCases: response.data.testCases || [],
-        runtime: response.data.runtime || null,
-        memory: response.data.memory || null,
-        error: response.data.error || null,
-      });
-    } catch (error) {
-      console.error("Execution failed:", {
-        status: error.response?.status,
-        code: error.code,
-        message: error.message,
-        responseData: error.response?.data,
-        stack: error.stack,
-      });
-
-      const errorMessage =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        error.message ||
-        "Code execution failed (no server response)";
-
-      setRunResult({
-        success: false,
-        error: errorMessage,
-        testCases: [],
-        runtime: null,
-        memory: null,
-      });
+      setRunResult(data);
+      setActiveRightTab("testcase");
+    } catch (e) {
+      setRunResult({ success: false, error: e.message });
+      setActiveRightTab("testcase");
     } finally {
       setLoading(false);
-      setActiveRightTab("testcase");
     }
   };
-
   const handleSubmitCode = async () => {
     setLoading(true);
     setSubmitResult(null);
-
     try {
-      const response = await axiosClient.post(
+      const { data } = await axiosClient.post(
         `/submittion/submit/${problemId}`,
-        {
-          code: code,
-          language: selectedLanguage,
-        }
+        { code, language: selectedLanguage }
       );
-
-      setSubmitResult(response.data);
-      setLoading(false);
+      setSubmitResult(data);
       setActiveRightTab("result");
-    } catch (error) {
-      console.error("Error submitting code:", error);
-      setSubmitResult(null);
-      setLoading(false);
+    } catch (e) {
+      setSubmitResult({ accepted: false, error: e.message });
       setActiveRightTab("result");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getLanguageForMonaco = (lang) => {
-    switch (lang) {
-      case "javascript":
-        return "javascript";
-      case "java":
-        return "java";
-      case "cpp":
-        return "cpp";
-      default:
-        return "javascript";
-    }
-  };
-
-  const getDifficultyColor = (difficulty) => {
-    switch (difficulty) {
-      case "easy":
-        return "text-green-500";
-      case "medium":
-        return "text-yellow-500";
-      case "hard":
-        return "text-red-500";
-      default:
-        return "text-gray-500";
-    }
-  };
-
-  if (loading && !problem) {
+  if (loading && !problem)
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <span className="loading loading-spinner loading-lg"></span>
+      <div className="flex items-center justify-center h-screen bg-gray-900">
+        <motion.span
+          className="loading loading-spinner loading-xl text-primary"
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1 }}
+        />
       </div>
     );
-  }
 
   return (
-    <div className="h-screen flex bg-base-100">
-      {/* Left Panel */}
-      <div className="w-1/2 flex flex-col border-r border-base-300">
-        {/* Left Tabs */}
-        <div className="tabs tabs-bordered bg-base-200 px-4">
-          <button
-            className={`tab ${
-              activeLeftTab === "description" ? "tab-active" : ""
-            }`}
-            onClick={() => setActiveLeftTab("description")}
-          >
-            Description
-          </button>
-          <button
-            className={`tab ${
-              activeLeftTab === "editorial" ? "tab-active" : ""
-            }`}
-            onClick={() => setActiveLeftTab("editorial")}
-          >
-            Editorial
-          </button>
-          <button
-            className={`tab ${
-              activeLeftTab === "solutions" ? "tab-active" : ""
-            }`}
-            onClick={() => setActiveLeftTab("solutions")}
-          >
-            Solutions
-          </button>
-          <button
-            className={`tab ${
-              activeLeftTab === "submittion" ? "tab-active" : ""
-            }`}
-            onClick={() => setActiveLeftTab("submittion")}
-          >
-            Submissions
-          </button>
-
-          <button
-            className={`tab ${activeLeftTab === "chatAI" ? "tab-active" : ""}`}
-            onClick={() => setActiveLeftTab("chatAI")}
-          >
-            ChatAI
-          </button>
+    <div className="flex flex-col lg:flex-row h-screen bg-[#222831] text-white">
+      <motion.div
+        initial={{ x: -50, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        className="w-full lg:w-1/2 flex flex-col border-r border-gray-700 bg-[#222831] shadow-lg"
+      >
+        <div className="tabs tabs-boxed bg-gray-900">
+          {[
+            { id: "description", icon: FileText, label: "Description" },
+            { id: "editorial", icon: BookOpen, label: "Editorial" },
+            { id: "solutions", icon: Code, label: "Solutions" },
+            { id: "submittion", icon: ListVideo, label: "Submissions" },
+            { id: "chatAI", icon: Zap, label: "Chat AI" },
+          ].map(({ id, icon: Icon, label }) => (
+            <button
+              key={id}
+              onClick={() => setActiveLeftTab(id)}
+              className={`tab flex items-center space-x-1 hover:bg-primary/10 transition ${
+                activeLeftTab === id ? "tab-active bg-primary/20" : ""
+              }`}
+            >
+              <Icon /> <span>{label}</span>
+            </button>
+          ))}
         </div>
-
-        {/* Left Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {problem && (
-            <>
-              {activeLeftTab === "description" && (
-                <div>
-                  <div className="flex items-center gap-4 mb-6">
-                    <h1 className="text-2xl font-bold">{problem.title}</h1>
-                    <div
-                      className={`badge badge-outline ${getDifficultyColor(
-                        problem.difficulty
-                      )}`}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {problem && activeLeftTab === "description" && (
+            <article className="space-y-4">
+              <motion.h1
+                className="text-2xl font-bold"
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+              >
+                {problem.title}
+              </motion.h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={`badge badge-outline ${getDifficultyColor(
+                    problem.difficulty
+                  )}`}
+                >
+                  {" "}
+                  {cap(problem.difficulty)}{" "}
+                </span>
+                {normalizeTags(problem.tags).map((tag) => (
+                  <motion.span
+                    key={tag}
+                    className="badge badge-primary"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    {tag}
+                  </motion.span>
+                ))}
+              </div>
+              <div className="prose max-w-none text-gray-300">
+                <pre className="whitespace-pre-wrap">{problem.description}</pre>
+              </div>
+              <section>
+                <h3 className="text-lg font-semibold mb-2">Examples</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {problem.visibleTestCases.map((ex, i) => (
+                    <motion.div
+                      key={i}
+                      className="bg-gray-700 p-4 rounded-lg shadow"
+                      whileHover={{ scale: 1.02 }}
                     >
-                      {problem.difficulty.charAt(0).toUpperCase() +
-                        problem.difficulty.slice(1)}
-                    </div>
-                    <div className="badge badge-primary">{problem.tags}</div>
-                  </div>
-
-                  <div className="prose max-w-none">
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                      {problem.description}
-                    </div>
-                  </div>
-
-                  <div className="mt-8">
-                    <h3 className="text-lg font-semibold mb-4">Examples:</h3>
-                    <div className="space-y-4">
-                      {problem.visibleTestCases.map((example, index) => (
-                        <div key={index} className="bg-base-200 p-4 rounded-lg">
-                          <h4 className="font-semibold mb-2">
-                            Example {index + 1}:
-                          </h4>
-                          <div className="space-y-2 text-sm font-mono">
-                            <div>
-                              <strong>Input:</strong> {example.input}
-                            </div>
-                            <div>
-                              <strong>Output:</strong> {example.output}
-                            </div>
-                            <div>
-                              <strong>Explanation:</strong>{" "}
-                              {example.explanation}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeLeftTab === "editorial" && (
-                <div className="prose max-w-none">
-                  <h2 className="text-xl font-bold mb-4">Editorial</h2>
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                    {"Editorial is here for the problem"}
-                  </div>
-                </div>
-              )}
-
-              {activeLeftTab === "solutions" && (
-                <div>
-                  <h2 className="text-xl font-bold mb-4">Solutions</h2>
-                  <div className="space-y-6">
-                    {problem.referenceSolution?.map((solution, index) => (
-                      <div
-                        key={index}
-                        className="border border-base-300 rounded-lg"
-                      >
-                        <div className="bg-base-200 px-4 py-2 rounded-t-lg">
-                          <h3 className="font-semibold">
-                            {problem?.title} - {solution?.language}
-                          </h3>
-                        </div>
-                        <div className="p-4">
-                          <pre className="bg-base-300 p-4 rounded text-sm overflow-x-auto">
-                            <code>{solution?.completeCode}</code>
-                          </pre>
-                        </div>
-                      </div>
-                    )) || (
-                      <p className="text-gray-500">
-                        Solutions will be available after you solve the problem.
+                      <h4 className="font-semibold">Example {i + 1}</h4>
+                      <p>
+                        <strong>Input:</strong> {ex.input}
                       </p>
-                    )}
-                  </div>
-                  {/* {console.log(problem.referenceSolution)} */}
-                </div>
-              )}
-
-              {activeLeftTab === "submittion" && (
-                <div>
-                  <h2 className="text-xl font-bold mb-4">My Submissions</h2>
-                  <div className="text-gray-500">
-                    <SubmissionHistory problemId={problemId} />
-                  </div>
-                </div>
-              )}
-
-              {activeLeftTab === "chatAI" && (
-                <div className="prose max-w-none">
-                  <h2 className="text-xl font-bold mb-4">CHAT with AI</h2>
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                    <ChatAi problem={problem}></ChatAi>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Right Panel */}
-      <div className="w-1/2 flex flex-col">
-        {/* Right Tabs */}
-        <div className="tabs tabs-bordered bg-base-200 px-4">
-          <button
-            className={`tab ${activeRightTab === "code" ? "tab-active" : ""}`}
-            onClick={() => setActiveRightTab("code")}
-          >
-            Code
-          </button>
-          <button
-            className={`tab ${
-              activeRightTab === "testcase" ? "tab-active" : ""
-            }`}
-            onClick={() => setActiveRightTab("testcase")}
-          >
-            Testcase
-          </button>
-          <button
-            className={`tab ${activeRightTab === "result" ? "tab-active" : ""}`}
-            onClick={() => setActiveRightTab("result")}
-          >
-            Result
-          </button>
-        </div>
-
-        {/* Right Content */}
-        <div className="flex-1 flex flex-col">
-          {activeRightTab === "code" && (
-            <div className="flex-1 flex flex-col">
-              {/* Language Selector */}
-              <div className="flex justify-between items-center p-4 border-b border-base-300">
-                <div className="flex gap-2">
-                  {["javascript", "java", "cpp"].map((lang) => (
-                    <button
-                      key={lang}
-                      className={`btn btn-sm ${
-                        selectedLanguage === lang ? "btn-primary" : "btn-ghost"
-                      }`}
-                      onClick={() => handleLanguageChange(lang)}
-                    >
-                      {lang === "cpp"
-                        ? "C++"
-                        : lang === "javascript"
-                        ? "JavaScript"
-                        : "Java"}
-                    </button>
+                      <p>
+                        <strong>Output:</strong> {ex.output}
+                      </p>
+                      <p className="mt-2 text-sm text-gray-400">
+                        <strong>Explanation:</strong> {ex.explanation}
+                      </p>
+                    </motion.div>
                   ))}
                 </div>
-              </div>
-
-              {/* Monaco Editor */}
-              <div className="flex-1">
-                <Editor
-                  height="100%"
-                  language={getLanguageForMonaco(selectedLanguage)}
-                  value={code}
-                  onChange={handleEditorChange}
-                  onMount={handleEditorDidMount}
-                  theme="vs-dark"
-                  options={{
-                    fontSize: 14,
-                    minimap: { enabled: false },
-                    scrollBeyondLastLine: false,
-                    automaticLayout: true,
-                    tabSize: 2,
-                    insertSpaces: true,
-                    wordWrap: "on",
-                    lineNumbers: "on",
-                    glyphMargin: false,
-                    folding: true,
-                    lineDecorationsWidth: 10,
-                    lineNumbersMinChars: 3,
-                    renderLineHighlight: "line",
-                    selectOnLineNumbers: true,
-                    roundedSelection: false,
-                    readOnly: false,
-                    cursorStyle: "line",
-                    mouseWheelZoom: true,
-                  }}
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="p-4 border-t border-base-300 flex justify-between">
-                <div className="flex gap-2">
-                  <button
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => setActiveRightTab("testcase")}
+              </section>
+            </article>
+          )}
+          {problem && activeLeftTab === "editorial" && (
+            <Editorial
+              secureUrl={problem.secureUrl}
+              thumbnailUrl={problem.thumbnailUrl}
+              duration={problem.duration}
+            />
+          )}
+          {problem && activeLeftTab === "solutions" && (
+            <div className="space-y-4">
+              {problem.referenceSolution?.length ? (
+                problem.referenceSolution.map((sol, i) => (
+                  <motion.div
+                    key={i}
+                    className="border rounded-lg shadow-sm hover:shadow-md transition"
                   >
-                    Console
-                  </button>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    className={`btn btn-outline btn-sm ${
-                      loading ? "loading" : ""
+                    <div className="bg-gray-700 p-2 flex items-center space-x-2">
+                      <Code /> <span>{sol.language}</span>
+                    </div>
+                    <pre className="p-4 overflow-x-auto bg-[#222831] text-white">
+                      <code>{sol.completeCode}</code>
+                    </pre>
+                  </motion.div>
+                ))
+              ) : (
+                <p className="text-gray-400">No solutions yet.</p>
+              )}
+            </div>
+          )}
+          {activeLeftTab === "submittion" && (
+            <SubmissionHistory problemId={problemId} />
+          )}
+          {activeLeftTab === "chatAI" && <ChatAi problem={problem} />}
+        </div>
+      </motion.div>
+      <motion.div
+        initial={{ x: 50, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        className="w-full lg:w-1/2 flex flex-col bg-gray-800 shadow-lg"
+      >
+        <div className="tabs tabs-boxed bg-gray-900">
+          {[
+            { id: "code", icon: Terminal, label: "Code" },
+            { id: "testcase", icon: Play, label: "Testcase" },
+            { id: "result", icon: CheckCircle, label: "Result" },
+          ].map(({ id, icon: Icon, label }) => (
+            <button
+              key={id}
+              onClick={() => setActiveRightTab(id)}
+              className={`tab flex items-center space-x-1 hover:bg-primary/10 transition ${
+                activeRightTab === id ? "tab-active bg-primary/20" : ""
+              }`}
+            >
+              <Icon /> <span>{label}</span>
+            </button>
+          ))}
+        </div>
+        <div className="flex-1 flex flex-col">
+          {activeRightTab === "code" && (
+            <div className="flex flex-col flex-1">
+              <div className="flex flex-wrap items-center p-4 border-b border-gray-700 gap-2">
+                {Object.keys(langMap).map((lang) => (
+                  <motion.button
+                    key={lang}
+                    onClick={() => setSelectedLanguage(lang)}
+                    className={`btn btn-sm ${
+                      selectedLanguage === lang
+                        ? "btn-primary shadow"
+                        : "btn-ghost text-white"
                     }`}
-                    onClick={handleRun}
-                    disabled={loading}
+                    whileHover={{ scale: 1.05 }}
                   >
-                    Run
-                  </button>
-                  <button
-                    className={`btn btn-primary btn-sm ${
-                      loading ? "loading" : ""
-                    }`}
-                    onClick={handleSubmitCode}
-                    disabled={loading}
-                  >
-                    Submit
-                  </button>
-                </div>
+                    {langMap[lang]}
+                  </motion.button>
+                ))}
+              </div>
+              <Editor
+                className="flex-1"
+                language={selectedLanguage}
+                value={code}
+                onChange={handleEditorChange}
+                theme="vs-dark"
+                options={{ automaticLayout: true, minimap: { enabled: false } }}
+              />
+              <div className="flex justify-end p-4 space-x-2 border-t border-gray-700">
+                <motion.button
+                  onClick={handleRun}
+                  disabled={loading}
+                  className={`btn btn-outline btn-sm ${
+                    loading ? "loading" : ""
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <Zap className="mr-1" /> Run
+                </motion.button>
+                <motion.button
+                  onClick={handleSubmitCode}
+                  disabled={loading}
+                  className={`btn btn-primary btn-sm ${
+                    loading ? "loading" : ""
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <Play className="mr-1" /> Submit
+                </motion.button>
               </div>
             </div>
           )}
-
           {activeRightTab === "testcase" && (
-            <div className="flex-1 p-4 overflow-y-auto">
-              <h3 className="font-semibold mb-4">Test Results</h3>
+            <div className="p-4 overflow-y-auto text-white">
               {runResult ? (
                 <div
                   className={`alert ${
                     runResult.success ? "alert-success" : "alert-error"
-                  } mb-4`}
+                  }`}
                 >
-                  <div>
-                    {runResult.success ? (
-                      <div>
-                        <h4 className="font-bold">✅ All test cases passed!</h4>
-                        <p className="text-sm mt-2">
-                          Runtime: {runResult.runtime + " sec"}
-                        </p>
-                        <p className="text-sm">
-                          Memory: {runResult.memory + " KB"}
-                        </p>
-
-                        <div className="mt-4 space-y-2">
-                          {runResult.testCases.map((tc, i) => (
-                            <div
-                              key={i}
-                              className="bg-base-100 p-3 rounded text-xs"
-                            >
-                              <div className="font-mono">
-                                <div>
-                                  <strong>Input:</strong> {tc.stdin}
-                                </div>
-                                <div>
-                                  <strong>Expected:</strong>{" "}
-                                  {tc.expected_output}
-                                </div>
-                                <div>
-                                  <strong>Output:</strong> {tc.stdout}
-                                </div>
-                                <div className={"text-green-600"}>
-                                  {"✓ Passed"}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div>
-                        <h4 className="font-bold">❌ Error</h4>
-                        <div className="mt-4 space-y-2">
-                          {runResult.testCases.map((tc, i) => (
-                            <div
-                              key={i}
-                              className="bg-base-100 p-3 rounded text-xs"
-                            >
-                              <div className="font-mono">
-                                <div>
-                                  <strong>Input:</strong> {tc.stdin}
-                                </div>
-                                <div>
-                                  <strong>Expected:</strong>{" "}
-                                  {tc.expected_output}
-                                </div>
-                                <div>
-                                  <strong>Output:</strong> {tc.stdout}
-                                </div>
-                                <div
-                                  className={
-                                    tc.status_id == 3
-                                      ? "text-green-600"
-                                      : "text-red-600"
-                                  }
-                                >
-                                  {tc.status_id == 3 ? "✓ Passed" : "✗ Failed"}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  {runResult.success ? "🎉 All passed!" : runResult.error}
                 </div>
               ) : (
-                <div className="text-gray-500">
-                  Click "Run" to test your code with the example test cases.
-                </div>
+                <p className="text-gray-400">Click Run to execute.</p>
               )}
             </div>
           )}
-
           {activeRightTab === "result" && (
-            <div className="flex-1 p-4 overflow-y-auto">
-              <h3 className="font-semibold mb-4">Submission Result</h3>
+            <div className="p-4 overflow-y-auto text-white">
               {submitResult ? (
                 <div
                   className={`alert ${
                     submitResult.accepted ? "alert-success" : "alert-error"
                   }`}
                 >
-                  <div>
-                    {submitResult.accepted ? (
-                      <div>
-                        <h4 className="font-bold text-lg">🎉 Accepted</h4>
-                        <div className="mt-4 space-y-2">
-                          <p>
-                            Test Cases Passed: {submitResult.passedTestCases}/
-                            {submitResult.totalTestCases}
-                          </p>
-                          <p>Runtime: {submitResult.runtime + " sec"}</p>
-                          <p>Memory: {submitResult.memory + "KB"} </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div>
-                        <h4 className="font-bold text-lg">
-                          ❌ {submitResult.error}
-                        </h4>
-                        <div className="mt-4 space-y-2">
-                          <p>
-                            Test Cases Passed: {submitResult.passedTestCases}/
-                            {submitResult.totalTestCases}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  {submitResult.accepted ? "🎉 Accepted!" : submitResult.error}
                 </div>
               ) : (
-                <div className="text-gray-500">
-                  Click "Submit" to submit your solution for evaluation.
-                </div>
+                <p className="text-gray-400">Click Submit to evaluate.</p>
               )}
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
 
 export default ProblemPage;
+
+function normalizeTags(tags) {
+  if (Array.isArray(tags)) return tags;
+  return tags ? String(tags).split(/,|\s+/).filter(Boolean) : [];
+}
+function getDifficultyColor(diff) {
+  switch (diff.toLowerCase()) {
+    case "easy":
+      return "text-green-400";
+    case "medium":
+      return "text-yellow-400";
+    case "hard":
+      return "text-red-400";
+    default:
+      return "text-gray-400";
+  }
+}
+function cap(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}

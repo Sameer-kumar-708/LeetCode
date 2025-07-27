@@ -9,6 +9,7 @@ const problemRouter = require("./routes/problemCreater");
 // const submitRouter = require("./Controllers/userSubmittion");
 const submitRouter = require("./routes/Submit");
 const aiRouter = require("./routes/aiChatting");
+const videoRouter = require("./routes/videoCreater");
 const cors = require("cors");
 
 app.use(
@@ -26,6 +27,7 @@ app.use("/auth", authRouter);
 app.use("/problem", problemRouter);
 app.use("/submittion", submitRouter);
 app.use("/ai", aiRouter);
+app.use("/video", videoRouter);
 
 const dbConnect = async () => {
   try {

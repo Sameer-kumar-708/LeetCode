@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import axiosClient from "../utils/axiosClient";
-import { Send } from "lucide-react";
+import { Send, User, Bot } from "lucide-react";
 
 function ChatAi({ problem }) {
   const [messages, setMessages] = useState([
-    { role: "model", parts: [{ text: "Hi, How are you" }] },
-    { role: "user", parts: [{ text: "I am Good" }] },
+    {
+      role: "model",
+      parts: [{ text: "Hi, how can I help you with this problem?" }],
+    },
+    { role: "user", parts: [{ text: "I am trying to understand the logic." }] },
   ]);
 
   const {
@@ -30,7 +33,7 @@ function ChatAi({ problem }) {
 
     try {
       const response = await axiosClient.post("/ai/chat", {
-        messages: messages,
+        messages,
         title: problem.title,
         description: problem.description,
         testCases: problem.visibleTestCases,
@@ -57,41 +60,60 @@ function ChatAi({ problem }) {
   };
 
   return (
-    <div className="flex flex-col h-screen max-h-[80vh] min-h-[500px]">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`chat ${
-              msg.role === "user" ? "chat-end" : "chat-start"
-            }`}
-          >
-            <div className="chat-bubble bg-base-200 text-base-content">
-              {msg.parts[0].text}
+    <div>
+      <h1 className="h-6 flex justify-center text-2xl mb-5">ChatAi</h1>
+      <div className="flex flex-col h-screen max-h-[80vh] min-h-[500px] bg-gray-900 text-gray-100 rounded-xl shadow-md border border-gray-700">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.map((msg, index) => (
+            <div
+              key={index}
+              className={`chat ${
+                msg.role === "user" ? "chat-end" : "chat-start"
+              }`}
+            >
+              <div className="chat-image avatar">
+                <div className="w-8 rounded-full bg-gray-800 p-1">
+                  {msg.role === "user" ? (
+                    <User className="text-blue-400" size={18} />
+                  ) : (
+                    <Bot className="text-green-400" size={18} />
+                  )}
+                </div>
+              </div>
+              <div
+                className={`chat-bubble ${
+                  msg.role === "user"
+                    ? "bg-blue-600 text-white"
+                    : "bg-green-700 text-white"
+                }`}
+              >
+                {msg.parts[0].text}
+              </div>
             </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="sticky bottom-0 p-4 bg-base-100 border-t"
-      >
-        <div className="flex items-center">
-          <input
-            placeholder="Ask me anything"
-            className="input input-bordered flex-1"
-            {...register("message", { required: true, minLength: 2 })}
-          />
-          <button
-            type="submit"
-            className="btn btn-ghost ml-2"
-            disabled={errors.message}
-          >
-            <Send size={20} />
-          </button>
+          ))}
+          <div ref={messagesEndRef} />
         </div>
-      </form>
+
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="p-4 bg-gray-800 border-t border-gray-700"
+        >
+          <div className="flex items-center gap-2">
+            <input
+              placeholder="Ask your question..."
+              className="input input-bordered w-full bg-gray-700 text-white border-gray-600 placeholder-gray-400"
+              {...register("message", { required: true, minLength: 2 })}
+            />
+            <button
+              type="submit"
+              className="btn btn-primary bg-blue-600 hover:bg-blue-500 border-none"
+              disabled={errors.message}
+            >
+              <Send size={18} />
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

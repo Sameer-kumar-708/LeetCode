@@ -40,8 +40,4 @@ authRouter.get("/check", userMiddleware, (req, res) => {
     message: "Valid User",
   });
 });
-
-// Get profile
-// authRouter.get("/getProfile", getProfile);
-
 module.exports = authRouter;

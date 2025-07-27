@@ -23,7 +23,7 @@ problemRouter.delete("/delete/:id", adminMiddleware, deleteProblem);
 
 //solvedProblem
 problemRouter.get("/getProblemById/:id", userMiddleware, getProblemById);
-problemRouter.get("/getAllProblem", getAllProblem);
+problemRouter.get("/getAllProblem", userMiddleware, getAllProblem);
 problemRouter.get("/solvedProblem", userMiddleware, solvedProblem);
 problemRouter.get("/submitProblem/:id", userMiddleware, submitProblem);
 

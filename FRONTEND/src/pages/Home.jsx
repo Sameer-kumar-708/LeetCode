@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { NavLink } from "react-router"; // Fixed import
+import { NavLink } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
 import axiosClient from "../utils/axiosClient";
 import { logoutUser } from "../authSlice";
+import { User, LogOut, List, Search, Boxes, CheckCircle2 } from "lucide-react";
 
-function Homepage() {
+export default function Homepage() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [problems, setProblems] = useState([]);
   const [solvedProblems, setSolvedProblems] = useState([]);
+  const [searchText, setSearchText] = useState("");
   const [filters, setFilters] = useState({
     difficulty: "all",
     tag: "all",
@@ -16,84 +18,107 @@ function Homepage() {
   });
 
   useEffect(() => {
-    const fetchProblems = async () => {
+    async function load() {
       try {
-        const { data } = await axiosClient.get("/problem/getAllProblem");
-        // console.log(data);
-        setProblems(data);
-      } catch (error) {
-        console.error("Error fetching problems:", error);
+        const { data: all } = await axiosClient.get("/problem/getAllProblem");
+        setProblems(Array.isArray(all) ? all : []);
+        if (user) {
+          const { data: solved } = await axiosClient.get(
+            "/problem/solvedProblem"
+          );
+          setSolvedProblems(Array.isArray(solved) ? solved : []);
+        }
+      } catch (e) {
+        console.error(e);
       }
-    };
-
-    const fetchSolvedProblems = async () => {
-      try {
-        const { data } = await axiosClient.get("/problem/solvedProblem");
-        setSolvedProblems(data);
-      } catch (error) {
-        console.error("Error fetching solved problems:", error);
-      }
-    };
-
-    fetchProblems();
-    if (user) fetchSolvedProblems();
+    }
+    load();
   }, [user]);
 
   const handleLogout = () => {
     dispatch(logoutUser());
-    setSolvedProblems([]); // Clear solved problems on logout
+    setSolvedProblems([]);
   };
 
-  const filteredProblems = problems.filter((problem) => {
-    const difficultyMatch =
-      filters.difficulty === "all" || problem.difficulty === filters.difficulty;
-    const tagMatch = filters.tag === "all" || problem.tags === filters.tag;
-    const statusMatch =
-      filters.status === "all" ||
-      solvedProblems.some((sp) => sp._id === problem._id);
-    return difficultyMatch && tagMatch && statusMatch;
-  });
+  const applyFilters = (list) =>
+    list.filter((p) => {
+      const diffOk =
+        filters.difficulty === "all" || p.difficulty === filters.difficulty;
+      const tagOk = filters.tag === "all" || p.tags === filters.tag;
+      const statusOk =
+        filters.status === "all" ||
+        (filters.status === "solved"
+          ? solvedProblems.some((sp) => sp._id === p._id)
+          : true);
+      const textOk = p.title.toLowerCase().includes(searchText.toLowerCase());
+      return diffOk && tagOk && statusOk && textOk;
+    });
+
+  const display = applyFilters(problems);
 
   return (
     <div className="min-h-screen bg-base-200">
-      {/* Navigation Bar */}
-      <nav className="navbar bg-base-100 shadow-lg px-4">
-        <div className="flex-1">
-          <NavLink to="/" className="btn btn-ghost text-xl">
-            LeetCode
-          </NavLink>
-        </div>
-        <div className="flex-none gap-4">
-          <div className="dropdown dropdown-end">
-            <div tabIndex={0} className="btn btn-ghost">
-              {user?.firstName}
+      {/* Navbar */}
+      <div className="navbar bg-neutral text-neutral-content px-8">
+        <NavLink
+          to="/"
+          className="btn btn-ghost normal-case text-xl flex items-center gap-2"
+        >
+          <Boxes className="w-full h-10" />
+          Codex
+        </NavLink>
+        <div className="flex-1 justify-center">
+          <div className="form-control">
+            <div className="input-group">
+              <input
+                type="text"
+                placeholder="Search problems..."
+                className="input input-bordered h-8"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
+              <button className="btn btn-primary h-8">
+                <Search className="w-5 h-5" />
+              </button>
             </div>
-            <ul className="mt-3 p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
-              <li>
-                <button onClick={handleLogout}>Logout</button>
-              </li>
-              {user.role == "admin" && (
-                <li>
-                  <NavLink to="/admin">Admin</NavLink>
-                </li>
-              )}
-            </ul>
           </div>
         </div>
-      </nav>
+        <div className="dropdown dropdown-end">
+          <label tabIndex={0} className="btn btn-ghost btn-circle avatar">
+            <div className="w-10 rounded-full bg-blue-500 flex items-center justify-center">
+              <User className="w-6 h-7 m-[6px] text-white" />
+            </div>
+          </label>
+          <ul
+            tabIndex={0}
+            className="mt-3 p-2 shadow menu menu-compact dropdown-content bg-base-100 rounded-box w-52"
+          >
+            <li className="font-semibold">{user?.firstName}</li>
+            <li>
+              <button onClick={handleLogout} className="justify-between">
+                Logout
+                <LogOut className="w-4 h-4" />
+              </button>
+            </li>
+            {user?.role === "admin" && (
+              <li>
+                <NavLink to="/admin">Admin Panel</NavLink>
+              </li>
+            )}
+          </ul>
+        </div>
+      </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto p-4">
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-6">
-          {/* New Status Filter */}
+      {/* Filters */}
+      <div className="container mx-auto py-6 px-4">
+        <div className="flex flex-col md:flex-row gap-4 items-center">
           <select
             className="select select-bordered"
             value={filters.status}
             onChange={(e) => setFilters({ ...filters, status: e.target.value })}
           >
-            <option value="all">All Problems</option>
-            <option value="solved">Solved Problems</option>
+            <option value="all">All Status</option>
+            <option value="solved">Solved</option>
           </select>
 
           <select
@@ -118,53 +143,44 @@ function Homepage() {
             <option value="array">Array</option>
             <option value="linkedList">Linked List</option>
             <option value="graph">Graph</option>
-            <option value="dp">DP</option>
+            <option value="dp">Dynamic Programming</option>
           </select>
         </div>
 
-        {/* Problems List */}
-        <div className="grid gap-4">
-          {filteredProblems.map((problem) => (
-            <div key={problem._id} className="card bg-base-100 shadow-xl">
+        {/* Problem Grid */}
+        <div className="grid gap-6 mt-6 sm:grid-cols-2 lg:grid-cols-3">
+          {display.map((problem) => (
+            <div
+              key={problem._id}
+              className="card bg-base-100 shadow hover:shadow-lg transition"
+            >
               <div className="card-body">
-                <div className="flex items-center justify-between">
-                  <h2 className="card-title">
-                    <NavLink
-                      to={`/problem/${problem._id}`}
-                      className="hover:text-primary"
-                    >
-                      {problem.title}
-                    </NavLink>
-                  </h2>
-                  {Array.isArray(solvedProblems) &&
-                    solvedProblems.some((sp) => sp._id === problem._id) && (
-                      <div className="badge badge-success gap-2">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        Solved
-                      </div>
-                    )}
+                <div className="flex justify-between items-center">
+                  <NavLink
+                    to={`/problem/${problem._id}`}
+                    className="card-title hover:text-primary transition"
+                  >
+                    {problem.title}
+                  </NavLink>
+                  {solvedProblems.some((sp) => sp._id === problem._id) && (
+                    <CheckCircle2 className="w-5 h-5 text-success" />
+                  )}
                 </div>
-
-                <div className="flex gap-2">
-                  <div
-                    className={`badge ${getDifficultyBadgeColor(
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <span
+                    className={`badge badge-outline ${getDifficultyColor(
                       problem.difficulty
                     )}`}
                   >
                     {problem.difficulty}
-                  </div>
-                  <div className="badge badge-info">{problem.tags}</div>
+                  </span>
+                  <span
+                    className={`badge badge-outline ${getTagColor(
+                      problem.tags
+                    )}`}
+                  >
+                    {problem.tags}
+                  </span>
                 </div>
               </div>
             </div>
@@ -175,8 +191,9 @@ function Homepage() {
   );
 }
 
-const getDifficultyBadgeColor = (difficulty) => {
-  switch (difficulty.toLowerCase()) {
+// Helpers
+const getDifficultyColor = (d) => {
+  switch (d.toLowerCase()) {
     case "easy":
       return "badge-success";
     case "medium":
@@ -184,8 +201,20 @@ const getDifficultyBadgeColor = (difficulty) => {
     case "hard":
       return "badge-error";
     default:
-      return "badge-neutral";
+      return "badge-outline";
   }
 };
-
-export default Homepage;
+const getTagColor = (t) => {
+  switch (t.toLowerCase()) {
+    case "array":
+      return "badge-info";
+    case "linkedlist":
+      return "badge-secondary";
+    case "graph":
+      return "badge-accent";
+    case "dp":
+      return "badge-primary";
+    default:
+      return "badge-outline";
+  }
+};
