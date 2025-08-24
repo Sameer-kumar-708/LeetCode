@@ -94,7 +94,6 @@ export default function AdminPanel() {
   const onSubmit = async (data) => {
     try {
       const res = await axiosClient.post("/problem/create", data);
-      console.log(res);
       alert(res.data.message || "Problem created successfully!");
       navigate("/");
     } catch (err) {
