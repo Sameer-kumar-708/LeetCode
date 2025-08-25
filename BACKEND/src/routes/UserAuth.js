@@ -27,17 +27,17 @@ authRouter.delete("/deleteprofile", userMiddleware, deleteProfile);
 
 //check
 
-authRouter.get("/check", userMiddleware, (req, res) => {
-  const reply = {
-    firstName: req.user.firstName,
-    emailId: req.user.emailId,
-    _id: req.user._id,
-    role: req.user.role,
-  };
+// authRouter.get("/check", userMiddleware, (req, res) => {
+//   const reply = {
+//     firstName: req.user.firstName,
+//     emailId: req.user.emailId,
+//     _id: req.user._id,
+//     role: req.user.role,
+//   };
 
-  res.status(200).json({
-    user: reply,
-    message: "Valid User",
-  });
-});
+//   res.status(200).json({
+//     user: reply,
+//     message: "Valid User",
+//   });
+// });
 module.exports = authRouter;
